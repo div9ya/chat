@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease-Specific Discussion Forum</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Disease-Specific Discussion Forum</h1>
+
+    <!-- Personal Chat Section -->
+    <h2>Personal Chat</h2>
+    <input type="text" id="sender" placeholder="Your name">
+    <input type="text" id="receiver" placeholder="Recipient's name">
+    <input type="text" id="personal-message" placeholder="Type a personal message...">
+    <button onclick="sendPrivateMessage()">Send Personal Message</button>
+
+    <br><br>
+
+    <!-- Disease Discussion Section -->
+    <h2>Join Disease Discussion</h2>
+    <input type="text" id="disease" placeholder="Enter disease name">
+    <button onclick="joinDiscussion()">Join Discussion</button>
+
+    <div id="chat" style="display:none;">
+        <h2 id="room-title"></h2>
+        <div id="messages"></div>
+        <input type="text" id="message" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="leaveDiscussion()">Leave Discussion</button>
+    </div>
+
+    <script>
+        const socket = io();  // Connect to the server using Socket.IO
+
+        // Function to send a private message
+        function sendPrivateMessage() {
+            const sender = document.getElementById("sender").value;
+            const receiver = document.getElementById("receiver").value;
+            const message = document.getElementById("personal-message").value;
+
+            if (!sender || !receiver || !message) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            // Redirect to private chat page
+            window.location.href = `/private/${sender}/${receiver}`;
+
+            // Emit private message event
+            socket.emit("send_private_message", { sender, receiver, message });
+        }
+
+        // Function to join a disease discussion room
+        function joinDiscussion() {
+            const sender = document.getElementById("sender").value;
+            const disease = document.getElementById("disease").value;
+
+            if (!sender || !disease) {
+                alert("Please enter both your name and a disease name.");
+                return;
+            }
+
+            socket.emit("join_disease_room", { username: sender, disease });
+
+            document.getElementById("chat").style.display = "block";
+            document.getElementById("room-title").innerText = "Discussion: " + disease;
+        }
+
+        // Function to leave the discussion
+        function leaveDiscussion() {
+            const sender = document.getElementById("sender").value;
+            const disease = document.getElementById("disease").value;
+
+            socket.emit("leave_disease_room", { username: sender, disease });
+            document.getElementById("chat").style.display = "none";
+        }
+
+        // Function to send a message in the disease room
+        function sendMessage() {
+            const sender = document.getElementById("sender").value;
+            const disease = document.getElementById("disease").value;
+            const message = document.getElementById("message").value;
+
+            if (!sender || !disease || !message) {
+                return;
+            }
+
+            socket.emit("send_message", { username: sender, disease, message });
+            document.getElementById("message").value = "";
+        }
+
+        // Event listener for new messages
+        socket.on("message", (msg) => {
+            const msgDiv = document.createElement("div");
+            msgDiv.textContent = msg;
+            document.getElementById("messages").appendChild(msgDiv);
+        });
+    </script>
+</body>
+</html>

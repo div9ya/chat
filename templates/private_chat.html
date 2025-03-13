@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Private Chat</h1>
+
+    <h2>Chat with <span id="receiver-name">{{ receiver }}</span></h2>
+    <div id="messages"></div>
+
+    <input type="text" id="private-message" placeholder="Type a message...">
+    <button onclick="sendPrivateMessage()">Send</button>
+
+    <script>
+        const socket = io();
+        const sender = "{{ sender }}";
+        const receiver = "{{ receiver }}";
+
+        // Display the name of the person you're chatting with
+        document.getElementById("receiver-name").textContent = receiver;
+
+        // Join the private room
+        socket.emit("send_private_message", { sender, receiver, message: "joined the chat" });
+
+        // Display previous private messages when the page loads
+        socket.on("message", (msg) => {
+            const msgDiv = document.createElement("div");
+            msgDiv.textContent = msg;
+            document.getElementById("messages").appendChild(msgDiv);
+        });
+
+        // Function to send a private message
+        function sendPrivateMessage() {
+            const message = document.getElementById("private-message").value;
+
+            if (!message) {
+                return;
+            }
+
+            // Emit private message event
+            socket.emit("send_private_message", { sender, receiver, message });
+
+            // Clear input field after sending
+            document.getElementById("private-message").value = "";
+        }
+
+        // Fetch and display previous private messages
+        socket.on("previous_messages", (messages) => {
+            messages.forEach((msg) => {
+                const msgDiv = document.createElement("div");
+                msgDiv.textContent = msg;
+                document.getElementById("messages").appendChild(msgDiv);
+            });
+        });
+
+        // Send the previous messages when the page loads
+        socket.emit("send_private_message", { sender, receiver, message: "get_previous_messages" });
+    </script>
+</body>
+</html>
